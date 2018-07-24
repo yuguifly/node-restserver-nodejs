@@ -5,39 +5,43 @@ const bycript = require('bcrypt');
 const _ = require('underscore');
 
 const Usuario = require('../models/usuario');
+const { verificaToken, verificaAdminRole } = require('../middlewares/autenticacion');
+
 const app = express();
-app.get('/usuario', function(req, res) {
-    // res.json('get usuario')
-    let desde = req.query.desde || 0;
-    desde = Number(desde);
-    let limite = req.query.limite || 5;
-    limite = Number(limite);
-    //Usuario.find({}) //todos
-    Usuario.find({ estado: true }, 'nombre email role estado google img')
-        .skip(desde)
-        .limit(limite)
-        .exec((err, usuario) => {
-            if (err) {
-                return res.status(400).json({
-                    ok: false,
-                    err
-                });
-            }
+//app.get('/usuario', function(req, res) { // antes de usar TOKEN, no usamos el middlewares 
+app.get('/usuario', verificaToken,
+    function(req, res) {
 
-            //respuesta del servicio
-            //Usuario.count({ google: true }, (err, conteo) => { // count con restricciones
-            Usuario.count({ estado: true }, (err, conteo) => {
-                res.json({
-                    ok: true,
-                    usuario,
-                    cuantos: conteo
+        let desde = req.query.desde || 0;
+        desde = Number(desde);
+        let limite = req.query.limite || 5;
+        limite = Number(limite);
+        //Usuario.find({}) //todos
+        Usuario.find({ estado: true }, 'nombre email role estado google img')
+            .skip(desde)
+            .limit(limite)
+            .exec((err, usuario) => {
+                if (err) {
+                    return res.status(400).json({
+                        ok: false,
+                        err
+                    });
+                }
+
+                //respuesta del servicio
+                //Usuario.count({ google: true }, (err, conteo) => { // count con restricciones
+                Usuario.count({ estado: true }, (err, conteo) => {
+                    res.json({
+                        ok: true,
+                        usuario,
+                        cuantos: conteo
+                    })
                 })
+
             })
+    });
 
-        })
-});
-
-app.post('/usuario', function(req, res) {
+app.post('/usuario', [verificaToken, verificaAdminRole], function(req, res) {
     let body = req.body;
 
     let usuario = new Usuario({
@@ -78,7 +82,7 @@ app.post('/usuario', function(req, res) {
 
 });
 
-app.put('/usuario/:id', function(req, res) {
+app.put('/usuario/:id', [verificaToken, verificaAdminRole], function(req, res) {
     let id = req.params.id;
 
     //let body = req.body; enviamos todo el body
@@ -109,7 +113,7 @@ app.put('/usuario/:id', function(req, res) {
 
 });
 
-app.delete('/usuario/:id', function(req, res) {
+app.delete('/usuario/:id', [verificaToken, verificaAdminRole], function(req, res) {
     let id = req.params.id;
     //Usuario.findByIdAndRemove(id, (err, usuarioBorrado) => { //eliminamos fisicamente
 
